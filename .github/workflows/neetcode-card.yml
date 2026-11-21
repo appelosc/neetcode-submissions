@@ -1,0 +1,35 @@
+name: Update NeetCode card
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["assets/**", ".github/scripts/difficulty.json"]
+  schedule:
+    - cron: "17 3 * * *"   # daily, keeps the streak/activity grid current
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  card:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history = correct solve dates
+
+      - name: Build card
+        env:
+          NEETCODE_USER: ${{ github.repository_owner }}
+        run: python3 .github/scripts/neetcode_card.py . assets/neetcode-card.svg
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add assets/neetcode-card.svg .github/scripts/difficulty.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Update NeetCode card [skip ci]"
+          git pull --rebase
+          git push
